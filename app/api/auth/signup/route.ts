@@ -18,11 +18,11 @@ export async function POST(req: NextRequest) {
   if (password.length < 8) {
     return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
   }
-  if (getUserByEmail(email)) {
+  if (await getUserByEmail(email)) {
     return NextResponse.json({ error: "An account with that email already exists." }, { status: 409 });
   }
 
-  const user = createUser({ name, email, passwordHash: hashPassword(password), role });
+  const user = await createUser({ name, email, passwordHash: hashPassword(password), role });
   const token = createSessionToken(user.id);
 
   const res = NextResponse.json({ user: toPublicUser(user) }, { status: 201 });
