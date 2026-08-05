@@ -1,21 +1,28 @@
-import fs from "fs";
-import path from "path";
+import { Redis } from "@upstash/redis";
 import { randomUUID } from "crypto";
 
 /**
- * ⚠️ PRODUCTION WARNING
- * This reads/writes `data/users.json` on disk. That works fine for local dev
- * (`npm run dev`) but WILL NOT persist on Vercel — serverless functions there
- * have a read-only filesystem outside `/tmp`, so every deploy (and often every
- * cold start) resets your users.
+ * User storage backed by Upstash Redis (Vercel's current recommended KV
+ * store — the old "Vercel KV" product was sunset and migrated to Upstash
+ * under the Vercel Marketplace).
  *
- * To go to production, swap the four functions below for calls to a real
- * database. Supabase is the least-friction option (free Postgres + a JS
- * client, works great with Next.js on Vercel). Nothing outside this file
- * needs to change — every route imports from here, not from fs directly.
+ * SETUP REQUIRED before this works on your deployment:
+ * 1. Vercel dashboard → your project → Storage tab → Create Database → Redis
+ *    (Upstash). This provisions a free-tier Redis instance and automatically
+ *    adds the KV_REST_API_URL / KV_REST_API_TOKEN env vars to your project.
+ * 2. Redeploy after connecting it (env vars only apply on new deployments).
+ * 3. For local dev, run `vercel env pull .env.local` once linked, or copy
+ *    those two values into `.env.local` yourself.
+ *
+ * Without step 1, `Redis.fromEnv()` below throws at request time and every
+ * signup/login will fail — that's what was happening with the plain-JSON-file
+ * version of this file on Vercel (read-only filesystem outside /tmp).
  */
 
-const DB_PATH = path.join(process.cwd(), "data", "users.json");
+const redis = Redis.fromEnv();
+
+const userKey = (id: string) => `bidride:user:${id}`;
+const emailIndexKey = (email: string) => `bidride:email:${email.toLowerCase()}`;
 
 export type UserRole = "rider" | "driver";
 
@@ -30,30 +37,23 @@ export type User = {
 
 export type PublicUser = Omit<User, "passwordHash">;
 
-function readAll(): User[] {
-  try {
-    const raw = fs.readFileSync(DB_PATH, "utf-8");
-    return JSON.parse(raw) as User[];
-  } catch {
-    return [];
-  }
+export async function getUserByEmail(email: string): Promise<User | undefined> {
+  const id = await redis.get<string>(emailIndexKey(email));
+  if (!id) return undefined;
+  return getUserById(id);
 }
 
-function writeAll(users: User[]) {
-  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-  fs.writeFileSync(DB_PATH, JSON.stringify(users, null, 2), "utf-8");
+export async function getUserById(id: string): Promise<User | undefined> {
+  const user = await redis.get<User>(userKey(id));
+  return user ?? undefined;
 }
 
-export function getUserByEmail(email: string): User | undefined {
-  return readAll().find((u) => u.email.toLowerCase() === email.toLowerCase());
-}
-
-export function getUserById(id: string): User | undefined {
-  return readAll().find((u) => u.id === id);
-}
-
-export function createUser(input: { name: string; email: string; passwordHash: string; role: UserRole }): User {
-  const users = readAll();
+export async function createUser(input: {
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: UserRole;
+}): Promise<User> {
   const user: User = {
     id: randomUUID(),
     name: input.name,
@@ -62,8 +62,11 @@ export function createUser(input: { name: string; email: string; passwordHash: s
     passwordHash: input.passwordHash,
     createdAt: new Date().toISOString(),
   };
-  users.push(user);
-  writeAll(users);
+  // Write the record and the email→id index together.
+  await Promise.all([
+    redis.set(userKey(user.id), user),
+    redis.set(emailIndexKey(user.email), user.id),
+  ]);
   return user;
 }
 
