@@ -1,4 +1,9 @@
-import { drivers as defaultDrivers, type Driver, trip as defaultTrip } from "@/lib/data";
+import {
+  drivers as defaultDrivers,
+  type Driver,
+  trip as defaultTrip,
+} from "@/lib/data";
+
 
 export const RIDE_STORAGE_KEY = "bidride-active-ride";
 export const RIDE_CHANGE_EVENT = "bidride:ride-change";
