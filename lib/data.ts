@@ -77,8 +77,6 @@ export const drivers: Driver[] = [
   },
 ];
 
-// Mock wallet balance shown in the TopBar — not tied to any user's real identity.
-// This becomes real once a Wallet backend exists.
 export const mockWallet = {
   balance: 12400,
 };
@@ -93,7 +91,22 @@ export const trip = {
 };
 
 export const recentPlaces = [
-  { id: "home", label: "Home", address: "15 Admiralty Way, Lekki Phase 1", icon: "home" as const },
-  { id: "office", label: "Office", address: "27B Bishop Aboyade Cole St, VI", icon: "briefcase" as const },
-  { id: "airport", label: "Airport", address: "Murtala Muhammed International Airport", icon: "plane" as const },
+  {
+    id: "home",
+    label: "Home",
+    address: "15 Admiralty Way, Lekki Phase 1",
+    icon: "home" as const,
+  },
+  {
+    id: "office",
+    label: "Office",
+    address: "27B Bishop Aboyade Cole St, VI",
+    icon: "briefcase" as const,
+  },
+  {
+    id: "airport",
+    label: "Airport",
+    address: "Murtala Muhammed International Airport",
+    icon: "plane" as const,
+  },
 ];
