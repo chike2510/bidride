@@ -72,28 +72,36 @@ function RideCompleteContent() {
   }
 
   function downloadReceipt() {
-    const receipt = [
-      "BidRide receipt",
-      `Driver: ${driver.name}`,
-      `Route: ${ride.pickup} → ${ride.destination}`,
-      `Fare: ${formatNaira(fare)}`,
-      `Tip: ${formatNaira(tip)}`,
-      `Total: ${formatNaira(total)}`,
-      `Rating: ${rating}/5`,
-      comment ? `Comment: ${comment}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
+  const currentRide = ride;
+  const currentDriver = driver;
 
-    const blob = new Blob([receipt], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `bidride-receipt-${ride.id.slice(0, 8)}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setNotice("Receipt downloaded.");
-  }
+  if (!currentRide || !currentDriver) return;
+
+  const receipt = [
+    "BidRide receipt",
+    `Driver: ${currentDriver.name}`,
+    `Route: ${currentRide.pickup} → ${currentRide.destination}`,
+    `Fare: ${formatNaira(fare)}`,
+    `Tip: ${formatNaira(tip)}`,
+    `Total: ${formatNaira(total)}`,
+    `Rating: ${rating}/5`,
+    comment ? `Comment: ${comment}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const blob = new Blob([receipt], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `bidride-receipt-${currentRide.id.slice(0, 8)}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  setNotice("Receipt downloaded.");
+}
+
 
   return (
     <>
