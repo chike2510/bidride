@@ -1,0 +1,23 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">BidRide city route illustration</title>
+  <desc id="desc">A navy and gold car traveling through a stylized Lagos city route.</desc>
+  <rect width="1200" height="900" fill="#E9EDF3"/>
+  <path d="M0 690C160 590 280 750 420 650C575 540 720 690 880 560C1010 454 1090 535 1200 460" stroke="#D2D8E2" stroke-width="74" stroke-linecap="round"/>
+  <path d="M0 690C160 590 280 750 420 650C575 540 720 690 880 560C1010 454 1090 535 1200 460" stroke="#FFFFFF" stroke-width="38" stroke-linecap="round" stroke-dasharray="18 20"/>
+  <g opacity="0.55" fill="#BFC8D5">
+    <rect x="90" y="170" width="160" height="220" rx="18"/><rect x="300" y="92" width="120" height="260" rx="18"/><rect x="910" y="130" width="170" height="270" rx="18"/><rect x="1080" y="250" width="110" height="180" rx="18"/>
+  </g>
+  <g opacity="0.65" fill="#FFFFFF">
+    <rect x="125" y="208" width="90" height="18" rx="9"/><rect x="125" y="246" width="120" height="18" rx="9"/><rect x="325" y="140" width="72" height="18" rx="9"/><rect x="945" y="185" width="100" height="18" rx="9"/><rect x="945" y="223" width="74" height="18" rx="9"/>
+  </g>
+  <circle cx="1040" cy="530" r="24" fill="#E85D4C" stroke="#FFFFFF" stroke-width="9"/>
+  <g transform="translate(400 500)">
+    <path d="M68 158L108 72C115 57 130 48 146 48H296C314 48 330 58 339 74L380 158H408C424 158 437 171 437 187V223C437 238 425 250 410 250H394C386 280 359 300 328 300C297 300 270 280 262 250H168C160 280 133 300 102 300C71 300 44 280 36 250H23C8 250-4 238-4 223V187C-4 171 8 158 23 158H68Z" fill="#14213D"/>
+    <path d="M132 66L114 120H330L304 66H132Z" fill="#B7C4D6"/>
+    <path d="M101 145H340" stroke="#F0A202" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="102" cy="222" r="34" fill="#E6EBF1" stroke="#F0A202" stroke-width="10"/><circle cx="328" cy="222" r="34" fill="#E6EBF1" stroke="#F0A202" stroke-width="10"/>
+    <circle cx="102" cy="222" r="12" fill="#14213D"/><circle cx="328" cy="222" r="12" fill="#14213D"/>
+    <rect x="24" y="176" width="46" height="18" rx="9" fill="#F0A202"/><rect x="364" y="176" width="46" height="18" rx="9" fill="#E85D4C"/>
+  </g>
+  <g transform="translate(740 286)"><path d="M38 80C38 40 70 8 110 8C150 8 182 40 182 80C182 134 110 210 110 210C110 210 38 134 38 80Z" fill="#F0A202" stroke="#FFFFFF" stroke-width="10"/><circle cx="110" cy="78" r="25" fill="#14213D"/><path d="M110 206L110 270" stroke="#14213D" stroke-width="8" stroke-linecap="round"/></g>
+</svg>

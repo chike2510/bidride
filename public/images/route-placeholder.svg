@@ -1,0 +1,17 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">BidRide route preview</title>
+  <desc id="desc">A stylized map preview showing a route from pickup to destination.</desc>
+  <rect width="1200" height="720" rx="32" fill="#EEF1F5"/>
+  <path d="M-40 110C150 60 230 210 390 160C550 110 620 10 820 68C1000 120 1050 36 1240 72" stroke="#D9DEE7" stroke-width="44" stroke-linecap="round"/>
+  <path d="M-50 550C120 480 180 590 340 510C500 430 610 500 760 430C910 360 1060 470 1240 390" stroke="#D9DEE7" stroke-width="52" stroke-linecap="round"/>
+  <path d="M230 720C300 570 260 440 390 350C510 268 650 330 734 232C800 155 900 145 1050 0" stroke="#FFFFFF" stroke-width="68" stroke-linecap="round"/>
+  <path d="M230 720C300 570 260 440 390 350C510 268 650 330 734 232C800 155 900 145 1050 0" stroke="#F0A202" stroke-width="12" stroke-linecap="round" stroke-dasharray="22 18"/>
+  <circle cx="230" cy="720" r="22" fill="#14213D" stroke="#FFFFFF" stroke-width="8"/>
+  <circle cx="1050" cy="0" r="22" fill="#E85D4C" stroke="#FFFFFF" stroke-width="8"/>
+  <g opacity="0.45" fill="#C3CAD5">
+    <rect x="80" y="250" width="96" height="54" rx="12"/>
+    <rect x="540" y="80" width="120" height="64" rx="12"/>
+    <rect x="875" y="520" width="140" height="60" rx="12"/>
+    <rect x="420" y="590" width="92" height="48" rx="12"/>
+  </g>
+</svg>
