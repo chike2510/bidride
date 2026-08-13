@@ -20,7 +20,7 @@ export function Avatar({
   online = false,
   className,
 }: {
-  src: string;
+  src?: string;
   alt: string;
   size?: number;
   online?: boolean;
@@ -29,7 +29,10 @@ export function Avatar({
   const [failed, setFailed] = useState(!src);
 
   return (
-    <div className={cn("relative shrink-0", className)} style={{ width: size, height: size }}>
+    <div
+      className={cn("relative shrink-0", className)}
+      style={{ width: size, height: size }}
+    >
       {failed ? (
         <div
           className="h-full w-full rounded-full bg-navy text-white flex items-center justify-center font-display font-bold"
@@ -40,7 +43,7 @@ export function Avatar({
         </div>
       ) : (
         <Image
-          src={src}
+          src={src as string}
           alt={alt}
           fill
           sizes={`${size}px`}
@@ -48,6 +51,7 @@ export function Avatar({
           onError={() => setFailed(true)}
         />
       )}
+
       {online && (
         <span
           className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-success ring-2 ring-white"
