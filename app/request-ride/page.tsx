@@ -55,8 +55,20 @@ function RequestRideContent() {
   const router = useRouter();
   const [pickup, setPickup] = useState(trip.pickup);
   const [destination, setDestination] = useState(trip.destination);
-  const [pickupCoords, setPickupCoords] = useState(() => popularDestinations[0]?.coords);
-  const [destinationCoords, setDestinationCoords] = useState(() => FUPRE_PLACES.find((place) => place.id === "fupre-hostels") ? { latitude: FUPRE_PLACES.find((place) => place.id === "fupre-hostels")!.latitude, longitude: FUPRE_PLACES.find((place) => place.id === "fupre-hostels")!.longitude } : popularDestinations[1]?.coords);
+  const [pickupCoords, setPickupCoords] = useState<
+  { latitude: number; longitude: number } | undefined
+>(() => popularDestinations[0]?.coords);
+
+const [destinationCoords, setDestinationCoords] = useState<
+  { latitude: number; longitude: number } | undefined
+>(() => {
+  const hostels = FUPRE_PLACES.find((place) => place.id === "fupre-hostels");
+
+  return hostels
+    ? { latitude: hostels.latitude, longitude: hostels.longitude }
+    : popularDestinations[1]?.coords;
+});
+
   const [passengers, setPassengers] = useState(1);
   const [rideType, setRideType] = useState("Any");
   const [stops, setStops] = useState<string[]>([]);
