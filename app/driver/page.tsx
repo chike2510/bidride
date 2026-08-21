@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CarFront, Check, Clock3, MapPin, Navigation, ShieldCheck, Wifi, X } from "lucide-react";
 import { AppShell, useMobileMenu } from "@/components/layout/AppShell";
 import { TopBar } from "@/components/layout/TopBar";
@@ -17,10 +18,14 @@ import {
 } from "@/lib/driver-store";
 import { formatDistance } from "@/lib/geo";
 import { formatNaira } from "@/lib/utils";
+import { useCurrentUser } from "@/lib/use-current-user";
 
 function DriverConsoleContent() {
   const openMobileMenu = useMobileMenu();
+  const router = useRouter();
+  const { user, loading: userLoading } = useCurrentUser();
   const [state, setState] = useState<DriverState | null>(null);
+  const stateRef = useRef<DriverState | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<DriverRequest | null>(null);
   const [fare, setFare] = useState(800);
   const [eta, setEta] = useState(4);
@@ -29,14 +34,66 @@ function DriverConsoleContent() {
   const [locationBusy, setLocationBusy] = useState(false);
 
   useEffect(() => {
-    setState(loadDriverState());
-    return subscribeToDriverState(setState);
+    if (!userLoading && user && user.role !== "driver") router.replace("/dashboard");
+  }, [router, user, userLoading]);
+
+  useEffect(() => {
+    const initialState = loadDriverState();
+    stateRef.current = initialState;
+    setState(initialState);
+    const syncRequests = async () => {
+      try {
+        const response = await fetch("/api/drivers/requests", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        setState((previous) => previous ? { ...previous, requests: data.requests ?? [] } : previous);
+      } catch {
+        // Preserve the last known request list during network interruptions.
+      }
+    };
+    void syncRequests();
+    const poll = window.setInterval(syncRequests, 3000);
+    const unsubscribe = subscribeToDriverState(setState);
+    return () => {
+      window.clearInterval(poll);
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const snapshot = stateRef.current;
+    if (!snapshot || snapshot.availability.status !== "available" || !navigator.geolocation) return;
+    const watcher = navigator.geolocation.watchPosition(
+      (position) => {
+        const current = stateRef.current;
+        if (!current) return;
+        const availability = {
+          ...current.availability,
+          status: "available" as const,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracyMeters: Math.round(position.coords.accuracy),
+          lastSeenAt: Date.now(),
+        };
+        const nextState = { ...current, availability };
+        stateRef.current = nextState;
+        saveDriverState(nextState);
+        void fetch("/api/drivers/location", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ campusId: FUPRE_CAMPUS.id, latitude: availability.latitude, longitude: availability.longitude, accuracyMeters: availability.accuracyMeters, status: "available" }),
+        });
+      },
+      () => setNotice("Location updates paused. Check browser location permission."),
+      { enableHighAccuracy: true, maximumAge: 15_000, timeout: 10_000 }
+    );
+    return () => navigator.geolocation.clearWatch(watcher);
+  }, [state?.availability.status]);
 
   const openRequests = useMemo(
     () => state?.requests.filter((request) => request.status !== "expired") ?? [],
@@ -56,6 +113,7 @@ function DriverConsoleContent() {
         },
       };
       saveDriverState(next);
+      void fetch("/api/drivers/availability", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ campusId: FUPRE_CAMPUS.id, latitude: next.availability.latitude, longitude: next.availability.longitude, accuracyMeters: next.availability.accuracyMeters, status: "offline" }) });
       setNotice("You are now offline and will not receive new campus requests.");
       return;
     }
@@ -78,16 +136,19 @@ function DriverConsoleContent() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        saveDriverState({
-          ...state,
-          availability: {
-            ...state.availability,
-            status: "available",
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracyMeters: Math.round(position.coords.accuracy),
-            lastSeenAt: Date.now(),
-          },
+        const availability = {
+          ...state.availability,
+          status: "available" as const,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracyMeters: Math.round(position.coords.accuracy),
+          lastSeenAt: Date.now(),
+        };
+        saveDriverState({ ...state, availability });
+        void fetch("/api/drivers/availability", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ campusId: FUPRE_CAMPUS.id, latitude: availability.latitude, longitude: availability.longitude, accuracyMeters: availability.accuracyMeters, status: "available" }),
         });
         setNotice("You are available for nearby FUPRE requests.");
         setLocationBusy(false);
@@ -118,7 +179,7 @@ function DriverConsoleContent() {
     setNotice("");
   }
 
-  function sendBid() {
+  async function sendBid() {
     if (!selectedRequest) return;
     if (!state || state.availability.status !== "available") {
       setNotice("Go available before submitting a bid.");
@@ -128,9 +189,23 @@ function DriverConsoleContent() {
       setNotice("Enter a fare between ₦300 and ₦5,000.");
       return;
     }
-    submitDriverBid(selectedRequest.id, fare, eta);
-    setSelectedRequest(null);
-    setNotice("Your bid was sent to the rider.");
+    try {
+      const response = await fetch(`/api/rides/${selectedRequest.id}/bids`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fare, etaMinutes: eta, distanceKm: selectedRequest.pickupDistanceKm }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setNotice(data.error ?? "Unable to submit this bid.");
+        return;
+      }
+      submitDriverBid(selectedRequest.id, fare, eta);
+      setSelectedRequest(null);
+      setNotice("Your bid was sent to the rider.");
+    } catch {
+      setNotice("Could not reach the ride service. Try again.");
+    }
   }
 
   if (!state) {

@@ -70,9 +70,9 @@ export default function SignupPage() {
 
       <div className="flex flex-col bg-bg">
         <div className="flex justify-end px-6 sm:px-10 pt-6">
-          <button className="text-sm text-navy/60 flex items-center gap-1.5 hover:text-navy transition-colors">
+          <a href="mailto:support@bidride.test" className="text-sm text-navy/60 flex items-center gap-1.5 hover:text-navy transition-colors">
             <Headphones size={16} /> Need help?
-          </button>
+          </a>
         </div>
 
         <div className="flex-1 flex items-center justify-center px-6 sm:px-10 py-10">
@@ -226,8 +226,8 @@ export default function SignupPage() {
 
         <p className="text-center text-xs text-navy/40 px-6 pb-6">
           By continuing, you agree to our{" "}
-          <Link href="#" className="text-navy/60 hover:underline">Terms of Service</Link> and{" "}
-          <Link href="#" className="text-navy/60 hover:underline">Privacy Policy</Link>.
+          <Link href="/terms" className="text-navy/60 hover:underline">Terms of Service</Link> and{" "}
+          <Link href="/privacy" className="text-navy/60 hover:underline">Privacy Policy</Link>.
         </p>
       </div>
     </div>

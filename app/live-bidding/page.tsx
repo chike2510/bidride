@@ -10,11 +10,8 @@ import { Button } from "@/components/ui/Button";
 import { CountdownRing } from "@/components/CountdownRing";
 import { DriverCard } from "@/components/DriverCard";
 import {
-  addDemoBid,
-  createDemoRide,
   loadRide,
   saveRide,
-  updateRide,
   type StoredRide,
 } from "@/lib/ride-store";
 import { formatNaira } from "@/lib/utils";
@@ -44,27 +41,29 @@ function LiveBiddingContent() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const current = loadRide() ?? createDemoRide();
-    saveRide(current);
+    const current = loadRide();
+    if (!current) {
+      setError("No active ride was found. Please create a new request.");
+      return;
+    }
     setRide(current);
+    const poll = window.setInterval(async () => {
+      try {
+        const response = await fetch(`/api/rides/${current.id}/bids`, { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        setRide((previous) => previous ? { ...previous, bids: data.bids ?? [] } : previous);
+      } catch {
+        // Keep the last known bids visible during a temporary network interruption.
+      }
+    }, 2500);
+    return () => window.clearInterval(poll);
   }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (!ride) return;
-    const timer = window.setTimeout(() => {
-      const updated = addDemoBid(ride);
-      if (updated !== ride) {
-        saveRide(updated);
-        setRide(updated);
-      }
-    }, 6000);
-    return () => window.clearTimeout(timer);
-  }, [ride]);
 
   const secondsLeft = ride ? Math.max(0, Math.ceil((ride.bidDeadline - now) / 1000)) : 42;
   const sorted = useMemo(() => {
@@ -79,7 +78,7 @@ function LiveBiddingContent() {
   const lowestFare = sorted.length ? Math.min(...sorted.map((driver) => driver.fare)) : 0;
   const bestValue = sorted[0];
 
-  function selectBid(driverId: string) {
+  async function selectBid(driverId: string) {
     if (!ride) return;
     if (secondsLeft <= 0) {
       setError("The bidding window has closed. Start a new request to receive fresh bids.");
@@ -87,17 +86,24 @@ function LiveBiddingContent() {
     }
     setError("");
     setSelectingId(driverId);
-    const updated = updateRide((current) => {
-      const selected = current.bids.find((bid) => bid.id === driverId);
-      if (!selected) return current;
-      return {
-        ...current,
-        status: "DRIVER_ASSIGNED",
-        acceptedDriverId: selected.id,
-        finalFare: selected.fare,
-      };
-    });
-    if (updated) router.push(`/ride-confirmed?rideId=${updated.id}`);
+    try {
+      const response = await fetch(`/api/rides/${ride.id}/accept`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bidId: driverId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error ?? "That bid is no longer available.");
+        return;
+      }
+      saveRide(data.ride);
+      router.push(`/ride-confirmed?rideId=${data.ride.id}`);
+    } catch {
+      setError("Could not accept the bid. Check your connection and try again.");
+    } finally {
+      setSelectingId(null);
+    }
   }
 
   if (!ride) {
@@ -176,7 +182,7 @@ function LiveBiddingContent() {
           </div>
 
           {error && <p className="text-sm text-urgency" role="alert">{error}</p>}
-          <p className="text-center text-xs text-navy/40 flex items-center justify-center gap-1"><MapPin size={13} /> Bids are simulated locally in this preview; the selected ride is persisted in your browser.</p>
+          <p className="text-center text-xs text-navy/40 flex items-center justify-center gap-1"><MapPin size={13} /> Bids are retrieved from the secured BidRide ride service and refreshed automatically while the bidding window is open.</p>
         </div>
 
         <div className="flex flex-col gap-4">

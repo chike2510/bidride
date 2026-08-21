@@ -25,13 +25,35 @@ function LiveTrackingContent() {
   const router = useRouter();
   const [ride, setRide] = useState<StoredRide | null>(null);
   const [secondsAway, setSecondsAway] = useState(0);
+  const [driverPoint, setDriverPoint] = useState<{ latitude: number; longitude: number } | null>(null);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
     const current = loadRide();
     setRide(current);
-    const driver = getRideDriver(current);
-    setSecondsAway((driver?.etaMinutes ?? 3) * 60);
+    const selectedDriver = getRideDriver(current);
+    setSecondsAway((selectedDriver?.etaMinutes ?? 3) * 60);
+    if (!current) return;
+
+    const syncLocation = async () => {
+      try {
+        const response = await fetch(`/api/rides/${current.id}/location`, { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        const location = data.location;
+        if (location?.latitude && location?.longitude) {
+          setDriverPoint({ latitude: location.latitude, longitude: location.longitude });
+          setNotice("");
+        } else {
+          setNotice("Waiting for the driver’s live location update.");
+        }
+      } catch {
+        setNotice("Live location is temporarily unavailable. Showing the last known trip details.");
+      }
+    };
+    void syncLocation();
+    const poll = window.setInterval(syncLocation, 5000);
+    return () => window.clearInterval(poll);
   }, []);
 
   useEffect(() => {
@@ -46,7 +68,7 @@ function LiveTrackingContent() {
   const arrivalTime = useMemo(() => new Date(Date.now() + secondsAway * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }), [secondsAway]);
   const pickupPoint = ride?.pickupCoords ?? { latitude: FUPRE_CAMPUS.centerLat, longitude: FUPRE_CAMPUS.centerLng };
   const destinationPoint = ride?.destinationCoords ?? { latitude: FUPRE_CAMPUS.centerLat - 0.002, longitude: FUPRE_CAMPUS.centerLng + 0.001 };
-  const driverPoint = { latitude: pickupPoint.latitude + Math.min(0.002, secondsAway / 120000), longitude: pickupPoint.longitude + Math.min(0.002, secondsAway / 120000) };
+  const hasLiveDriverLocation = Boolean(driverPoint);
 
   async function shareTrip() {
     if (!ride || !driver) return;
@@ -77,10 +99,10 @@ function LiveTrackingContent() {
       <TopBar onMenuClick={openMobileMenu} title="Live Tracking" subtitle={secondsAway > 0 ? "Your driver is on the way" : "Your driver has arrived"} />
       <main className="flex-1 flex flex-col">
         <div className="relative flex-1 min-h-[320px] overflow-hidden">
-          <FupreLeafletMap pickup={pickupPoint} destination={destinationPoint} driver={driverPoint} followDriver={secondsAway > 0} className="absolute inset-0 min-h-0 rounded-none" />
+          <FupreLeafletMap pickup={pickupPoint} destination={destinationPoint} driver={driverPoint ?? undefined} followDriver={secondsAway > 0} className="absolute inset-0 min-h-0 rounded-none" />
           <div className="absolute top-4 left-4 flex flex-col gap-2"><button type="button" onClick={() => setNotice("The map is centered on your active route.")} className="h-11 w-11 bg-white rounded-input shadow-soft flex items-center justify-center" aria-label="Center on driver"><Car size={16} /></button></div>
           <div className="absolute top-4 right-4 flex flex-col gap-2"><button type="button" onClick={() => setNotice("Use the Satellite button on the map to view FUPRE from above.")} className="h-11 w-11 bg-white rounded-input shadow-soft flex items-center justify-center" aria-label="Map layers"><Locate size={16} /></button></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-input shadow-elevated px-4 py-2.5 text-center"><p className="text-xs text-navy/50">{secondsAway > 0 ? "Arriving in" : "Driver arrived"}</p><p className="text-success font-semibold text-sm">{secondsAway > 0 ? `${minutesAway} min` : "Now"} {secondsAway > 0 && <span className="text-navy/40 font-normal">({(secondsAway / 60 * 0.4).toFixed(1)} km)</span>}</p></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-input shadow-elevated px-4 py-2.5 text-center"><p className="text-xs text-navy/50">{hasLiveDriverLocation ? (secondsAway > 0 ? "Arriving in" : "Driver arrived") : "Live location"}</p><p className="text-success font-semibold text-sm">{hasLiveDriverLocation ? (secondsAway > 0 ? `${minutesAway} min` : "Now") : "Waiting"} {hasLiveDriverLocation && secondsAway > 0 && <span className="text-navy/40 font-normal">(from latest driver update)</span>}</p></div>
         </div>
 
         <Card className="mx-5 sm:mx-8 -mt-6 relative z-10 p-5 sm:p-6"><div className="flex flex-col sm:flex-row sm:items-center gap-5"><div className="flex items-center gap-3 flex-1"><Avatar src={driver.avatar} alt={driver.name} size={56} online /><div><p className="font-semibold">{driver.name}</p><p className="text-xs text-navy/50">{driver.trips.toLocaleString()} trips · {driver.vehicle}</p><span className="inline-flex mt-1 rounded-badge bg-success/10 text-success text-[11px] font-semibold px-2 py-0.5">Verified driver</span></div></div><div className="text-center"><p className="text-xs text-navy/50">{secondsAway > 0 ? "Arriving in" : "At pickup"}</p><p className="font-mono text-2xl font-bold text-success">{secondsAway > 0 ? `${minutesAway} min` : "Now"}</p><p className="text-xs text-navy/40">Updated just now</p></div><div className="flex sm:hidden md:flex items-center gap-1">{progressSteps.map((step, index) => <div key={step.key} className="flex items-center"><div className="flex flex-col items-center gap-1.5"><span className={cn("h-9 w-9 rounded-full flex items-center justify-center", index <= progressIndex ? "bg-success text-white" : "bg-bg text-navy/40")}><step.icon size={14} /></span><span className="text-[10px] text-navy/50 whitespace-nowrap">{step.label}</span></div>{index < progressSteps.length - 1 && <span className="w-6 h-px bg-cardBorder mx-1 mb-4" />}</div>)}</div><div className="grid grid-cols-3 sm:flex sm:flex-col gap-2 w-full sm:w-40"><Button variant="secondary" size="md" className="w-full" onClick={() => setNotice("Calling is protected and keeps your number private.")}><Phone size={15} /><span className="hidden sm:inline">Call driver</span></Button><Button variant="secondary" size="md" className="w-full" onClick={() => setNotice("Messaging will be available when the driver is close to pickup.")}><MessageCircle size={15} /><span className="hidden sm:inline">Message</span></Button><Button variant="danger" size="md" className="w-full" onClick={cancelRide}><span className="hidden sm:inline">Cancel ride</span><span className="sm:hidden">Cancel</span></Button></div></div>{notice && <p className="mt-4 text-sm text-navy/60" role="status">{notice}</p>}</Card>

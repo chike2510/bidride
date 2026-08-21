@@ -35,7 +35,7 @@ function CompareDriversContent() {
     saveRide(current);
   }, []);
 
-  const drivers = ride?.bids.slice(0, 3) ?? [];
+  const drivers = useMemo(() => ride?.bids.slice(0, 3) ?? [], [ride]);
   const lowestFare = useMemo(() => Math.min(...drivers.map((driver) => driver.fare)), [drivers]);
 
   function pick(driverId: string) {

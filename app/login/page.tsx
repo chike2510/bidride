@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, TrendingUp, ShieldCheck, Wallet, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -89,17 +90,17 @@ function LoginForm() {
           </div>
         </div>
 
-        <div className="relative z-10 mt-10 h-56 rounded-input bg-white/5 border border-white/10 flex items-center justify-center">
-          <p className="text-white/30 text-xs">welcome-illustration.png</p>
+        <div className="relative z-10 mt-10 h-56 rounded-input bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+          <Image src="/images/landing-hero.svg" alt="BidRide campus ride illustration" width={420} height={220} className="h-full w-full object-cover opacity-90" />
         </div>
       </div>
 
       {/* Right panel - the form */}
       <div className="flex flex-col bg-bg">
         <div className="flex justify-end px-6 sm:px-10 pt-6">
-          <button className="text-sm text-navy/60 flex items-center gap-1.5 hover:text-navy transition-colors">
+          <a href="mailto:support@bidride.test" className="text-sm text-navy/60 flex items-center gap-1.5 hover:text-navy transition-colors">
             <Headphones size={16} /> Need help?
-          </button>
+          </a>
         </div>
 
         <div className="flex-1 flex items-center justify-center px-6 sm:px-10 py-10">
@@ -159,9 +160,9 @@ function LoginForm() {
               </div>
 
               <div className="text-right -mt-1">
-                <Link href="#" className="text-sm text-gold font-medium hover:underline">
+                <a href="mailto:support@bidride.test?subject=BidRide%20password%20reset" className="text-sm text-gold font-medium hover:underline">
                   Forgot password?
-                </Link>
+                </a>
               </div>
 
               {error && (
@@ -182,7 +183,7 @@ function LoginForm() {
             </div>
 
             <div className="flex flex-col gap-3">
-              <button className="h-12 rounded-input border border-cardBorder flex items-center justify-center gap-2.5 text-sm font-medium hover:bg-white transition-colors">
+              <button type="button" disabled title="Social sign-in is not available in this prototype" className="h-12 rounded-input border border-cardBorder flex items-center justify-center gap-2.5 text-sm font-medium opacity-60 cursor-not-allowed">
                 <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
                   <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.54 5.54 0 0 1-2.4 3.63v3h3.87c2.27-2.09 3.55-5.17 3.55-8.87z" />
                   <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.94-2.92l-3.87-3c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.28v3.09A12 12 0 0 0 12 24z" />
@@ -191,7 +192,7 @@ function LoginForm() {
                 </svg>
                 Continue with Google
               </button>
-              <button className="h-12 rounded-input border border-cardBorder flex items-center justify-center gap-2.5 text-sm font-medium hover:bg-white transition-colors">
+              <button type="button" disabled title="Social sign-in is not available in this prototype" className="h-12 rounded-input border border-cardBorder flex items-center justify-center gap-2.5 text-sm font-medium opacity-60 cursor-not-allowed">
                 <svg width="15" height="15" viewBox="0 0 384 512" fill="currentColor" aria-hidden>
                   <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141 0 184.8 0 273.5c0 26.2 4.8 53.3 14.4 81.2 12.8 37.3 59 128.8 107.2 127.3 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-84.1 102.6-121.5-65.2-30.7-57.7-90-57.7-91.8zm-56.6-164.2c27-32.1 24.5-61.4 23.7-71.9-23.8 1.4-51.3 16.4-67 34.9-17.3 19.8-27.5 44.3-25.3 71.4 25.9 2 49.4-11.4 68.6-34.4z" />
                 </svg>
@@ -210,8 +211,8 @@ function LoginForm() {
 
         <p className="text-center text-xs text-navy/40 px-6 pb-6">
           By continuing, you agree to our{" "}
-          <Link href="#" className="text-navy/60 hover:underline">Terms of Service</Link> and{" "}
-          <Link href="#" className="text-navy/60 hover:underline">Privacy Policy</Link>.
+          <Link href="/terms" className="text-navy/60 hover:underline">Terms of Service</Link> and{" "}
+          <Link href="/privacy" className="text-navy/60 hover:underline">Privacy Policy</Link>.
         </p>
       </div>
     </div>

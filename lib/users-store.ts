@@ -1,5 +1,5 @@
-import { Redis } from "@upstash/redis";
 import { randomUUID } from "crypto";
+import { getRedis } from "@/lib/redis";
 
 /**
  * User storage backed by Upstash Redis (Vercel's current recommended KV
@@ -7,19 +7,22 @@ import { randomUUID } from "crypto";
  * under the Vercel Marketplace).
  *
  * SETUP REQUIRED before this works on your deployment:
- * 1. Vercel dashboard → your project → Storage tab → Create Database → Redis
- *    (Upstash). This provisions a free-tier Redis instance and automatically
- *    adds the KV_REST_API_URL / KV_REST_API_TOKEN env vars to your project.
+ * 1. Configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel.
+ *    KV_REST_API_URL and KV_REST_API_TOKEN are also accepted for existing projects.
  * 2. Redeploy after connecting it (env vars only apply on new deployments).
  * 3. For local dev, run `vercel env pull .env.local` once linked, or copy
  *    those two values into `.env.local` yourself.
  *
- * Without step 1, `Redis.fromEnv()` below throws at request time and every
- * signup/login will fail — that's what was happening with the plain-JSON-file
+ * Without step 1, the auth routes return a controlled configuration error and
+ * signup/login cannot persist users. Never use a JSON file as a production store.
  * version of this file on Vercel (read-only filesystem outside /tmp).
  */
 
-const redis = Redis.fromEnv();
+function requiredRedis() {
+  const redis = getRedis();
+  if (!redis) throw new Error("REDIS_NOT_CONFIGURED");
+  return redis;
+}
 
 const userKey = (id: string) => `bidride:user:${id}`;
 const emailIndexKey = (email: string) => `bidride:email:${email.toLowerCase()}`;
@@ -38,12 +41,14 @@ export type User = {
 export type PublicUser = Omit<User, "passwordHash">;
 
 export async function getUserByEmail(email: string): Promise<User | undefined> {
+  const redis = requiredRedis();
   const id = await redis.get<string>(emailIndexKey(email));
   if (!id) return undefined;
   return getUserById(id);
 }
 
 export async function getUserById(id: string): Promise<User | undefined> {
+  const redis = requiredRedis();
   const user = await redis.get<User>(userKey(id));
   return user ?? undefined;
 }
@@ -62,6 +67,7 @@ export async function createUser(input: {
     passwordHash: input.passwordHash,
     createdAt: new Date().toISOString(),
   };
+  const redis = requiredRedis();
   // Write the record and the email→id index together.
   await Promise.all([
     redis.set(userKey(user.id), user),

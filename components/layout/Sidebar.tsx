@@ -49,7 +49,7 @@ export function Sidebar({
       {/* Mobile scrim */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-navy/50 lg:hidden"
+          className="fixed inset-0 z-[999] bg-navy/50 lg:hidden"
           onClick={onClose}
           aria-hidden
         />
@@ -57,11 +57,13 @@ export function Sidebar({
 
       <aside
         className={cn(
-          "fixed lg:sticky top-0 left-0 z-50 h-screen w-[260px] shrink-0",
+          "fixed lg:sticky top-0 left-0 z-[1000] h-screen w-[260px] shrink-0",
           "bg-navy flex flex-col overflow-y-auto no-scrollbar",
           "transition-transform duration-200 ease-out",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
+        aria-label="Main navigation"
+        aria-hidden={!mobileOpen}
       >
         <div className="flex items-center justify-between px-6 pt-7 pb-6">
           <Link href="/dashboard" onClick={onClose} className="font-display text-2xl font-bold tracking-tight">

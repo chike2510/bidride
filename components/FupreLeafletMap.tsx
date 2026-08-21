@@ -135,15 +135,31 @@ export function FupreLeafletMap({
       }
 
       if (pickup && destination) {
-        routeRef.current = L.polyline([pointToLatLng(pickup), pointToLatLng(destination)], {
+        const start = pointToLatLng(pickup);
+        const end = pointToLatLng(destination);
+        routeRef.current = L.polyline([start, end], {
           color: "#e7a800",
           weight: 5,
-          opacity: 0.9,
+          opacity: 0.65,
           dashArray: "10 8",
         }).addTo(map);
 
-        const bounds = L.latLngBounds([pointToLatLng(pickup), pointToLatLng(destination)]);
+        const bounds = L.latLngBounds([start, end]);
         map.fitBounds(bounds.pad(0.25), { maxZoom: 17, animate: false });
+
+        const routeUrl = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+        fetch(routeUrl)
+          .then((response) => response.ok ? response.json() : null)
+          .then((data) => {
+            if (cancelled || !data?.routes?.[0]?.geometry?.coordinates) return;
+            const coordinates = data.routes[0].geometry.coordinates.map(([longitude, latitude]: [number, number]) => [latitude, longitude] as [number, number]);
+            if (routeRef.current) routeRef.current.remove();
+            routeRef.current = L.polyline(coordinates, { color: "#e7a800", weight: 5, opacity: 0.95 }).addTo(map);
+            map.fitBounds(routeRef.current.getBounds().pad(0.12), { maxZoom: 17, animate: false });
+          })
+          .catch(() => {
+            // The approximate fallback remains visible if routing is unavailable.
+          });
       } else if (!driver) {
         map.setView([FUPRE_CAMPUS.centerLat, FUPRE_CAMPUS.centerLng], 16);
       }

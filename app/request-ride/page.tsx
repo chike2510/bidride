@@ -133,7 +133,7 @@ const [destinationCoords, setDestinationCoords] = useState<
     );
   }
 
-  function submitRequest() {
+  async function submitRequest() {
     const cleanPickup = pickup.trim();
     const cleanDestination = destination.trim();
     if (!cleanPickup || !cleanDestination) {
@@ -147,19 +147,34 @@ const [destinationCoords, setDestinationCoords] = useState<
 
     setError("");
     setIsSubmitting(true);
-    const ride = createRide({
-      pickup: cleanPickup,
-      destination: cleanDestination,
-      campusId: FUPRE_CAMPUS.id,
-      pickupCoords,
-      destinationCoords,
-      passengers,
-      rideType,
-      stops,
-      preferences: selectedPreferences,
-    });
-    saveRide(ride);
-    router.push(`/live-bidding?rideId=${ride.id}`);
+    try {
+      const response = await fetch("/api/rides", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pickup: cleanPickup,
+          destination: cleanDestination,
+          campusId: FUPRE_CAMPUS.id,
+          pickupCoords,
+          destinationCoords,
+          passengers,
+          rideType,
+          stops,
+          preferences: selectedPreferences,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error ?? "Unable to create this ride. Please try again.");
+        return;
+      }
+      saveRide(data.ride);
+      router.push(`/live-bidding?rideId=${data.ride.id}`);
+    } catch {
+      setError("Could not reach the ride service. Check your connection and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
